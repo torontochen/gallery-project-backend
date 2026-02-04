@@ -59,10 +59,11 @@ async def create_checkout_session(orderId: str, token_details: dict = Depends(ac
     user_email = token_details.get("user")["email"]
     user_name = token_details.get("user")["first_name"] + " " + token_details.get("user")["last_name"]
     user = await user_service.get_user_by_email(user_email, session)
+    print("user is", user)
     customer_data = {
         "email": user_email,
         "name": user_name,
-        "phone": user.phone if user.phone else "",
+        "phone": user.phone_number if user.phone_number else "",
         "delivery_address": user.address if user.address else "",
         "user_id_internal": user_id,
     }

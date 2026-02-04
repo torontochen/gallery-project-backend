@@ -32,6 +32,6 @@ class ShoppingCartModel(BaseModel):
 class StripeCustomerModel(BaseModel):
     email: str
     name: str
-    phone: str
+    phone: Optional[str]
     delivery_address: str
     internal_user_id: str
