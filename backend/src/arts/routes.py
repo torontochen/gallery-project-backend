@@ -26,7 +26,7 @@ async def get_arts_by_artist(
     else:
         return arts
 
-@art_router.get("/{art_uid}", response_model=ArtModel, dependencies=[role_checker])
+@art_router.get("/art/{art_uid}", response_model=ArtModel, dependencies=[role_checker])
 async def get_art_by_id(
     art_uid: str,
     session: AsyncSession = Depends(get_session),

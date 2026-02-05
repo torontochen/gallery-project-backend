@@ -17,9 +17,11 @@ class ArtService:
         return arts
 
     async def get_art_by_id(self, art_uid: str, session: AsyncSession):
+        print("art uid received is", art_uid)
         statement = select(Art).where(Art.uid == art_uid)
         result = await session.exec(statement)
         art = result.first()
+        print("art found is", art)
         # session.add(new_work)
         # await session.commit()
         # await session.refresh(new_work)

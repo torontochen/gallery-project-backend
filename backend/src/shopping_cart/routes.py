@@ -26,7 +26,7 @@ role_checker = Depends(RoleChecker(["admin", "user"]))
 stripe.api_key = Config.STRIPE_SECRET_KEY
 
 # @shopping_cart_router.get("/{user_id}", response_model=List[ShoppingCartModel], dependencies=[role_checker])
-@shopping_cart_router.get("/{user_id}", response_model=List[ShoppingCartModel])
+@shopping_cart_router.get("/{user_id}", response_model=ShoppingCartModel)
 async def get_shopping_cart_by_user(
     user_id: str,
     session: AsyncSession = Depends(get_session),
