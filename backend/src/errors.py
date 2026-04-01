@@ -1,82 +1,70 @@
 from typing import Any, Callable
-from fastapi.requests import Request
+# from fastapi.requests import Request
 from fastapi.responses import JSONResponse
-from fastapi import FastAPI, status
+from fastapi import FastAPI, status, Request
 from sqlalchemy.exc import SQLAlchemyError
 
 class GalleryException(Exception):
     """This is the base class for all gallery errors"""
-
     pass
 
 
 class InvalidToken(GalleryException):
     """User has provided an invalid or expired token"""
-
     pass
 
 
 class RevokedToken(GalleryException):
     """User has provided a token that has been revoked"""
-
     pass
 
 
 class AccessTokenRequired(GalleryException):
     """User has provided a refresh token when an access token is needed"""
-
     pass
 
 
 class RefreshTokenRequired(GalleryException):
     """User has provided an access token when a refresh token is needed"""
-
     pass
 
 
 class UserAlreadyExists(GalleryException):
     """User has provided an email for a user who exists during sign up."""
-
     pass
 
 
 class InvalidCredentials(GalleryException):
     """User has provided wrong email or password during log in."""
-
     pass
 
 
 class InsufficientPermission(GalleryException):
     """User does not have the neccessary permissions to perform an action."""
-
     pass
 
 
 class ArtNotFound(GalleryException):
     """Book Not found"""
-
     pass
 
 
 class ArtistNotFound(GalleryException):
     """Tag Not found"""
-
     pass
 
 
 class TagAlreadyExists(GalleryException):
     """Tag already exists"""
-
     pass
 
 
 class UserNotFound(GalleryException):
     """User Not found"""
-
     pass
+
 class ShoppingCartNotFound(GalleryException):
     """Shopping Cart Not found"""
-
     pass
 
 
@@ -87,7 +75,8 @@ class AccountNotVerified(Exception):
 def create_exception_handler(
     status_code: int, initial_detail: Any
 ) -> Callable[[Request, Exception], JSONResponse]:
-
+    print("Creating exception handler for status code:", status_code)
+    print("Initial detail:", initial_detail)
     async def exception_handler(request: Request, exc: GalleryException):
 
         return JSONResponse(content=initial_detail, status_code=status_code)
@@ -117,6 +106,7 @@ def register_all_errors(app: FastAPI):
             },
         ),
     )
+
     app.add_exception_handler(
         ArtNotFound,
         create_exception_handler(
@@ -127,6 +117,7 @@ def register_all_errors(app: FastAPI):
             },
         ),
     )
+
     app.add_exception_handler(
         ShoppingCartNotFound,
         create_exception_handler(
@@ -137,6 +128,7 @@ def register_all_errors(app: FastAPI):
             },
         ),
     )
+
     app.add_exception_handler(
         InvalidCredentials,
         create_exception_handler(
@@ -147,6 +139,7 @@ def register_all_errors(app: FastAPI):
             },
         ),
     )
+
     app.add_exception_handler(
         InvalidToken,
         create_exception_handler(
@@ -158,6 +151,7 @@ def register_all_errors(app: FastAPI):
             },
         ),
     )
+
     app.add_exception_handler(
         RevokedToken,
         create_exception_handler(
@@ -169,6 +163,7 @@ def register_all_errors(app: FastAPI):
             },
         ),
     )
+
     app.add_exception_handler(
         AccessTokenRequired,
         create_exception_handler(
@@ -180,6 +175,7 @@ def register_all_errors(app: FastAPI):
             },
         ),
     )
+
     app.add_exception_handler(
         RefreshTokenRequired,
         create_exception_handler(
@@ -191,6 +187,7 @@ def register_all_errors(app: FastAPI):
             },
         ),
     )
+
     app.add_exception_handler(
         InsufficientPermission,
         create_exception_handler(
@@ -201,6 +198,7 @@ def register_all_errors(app: FastAPI):
             },
         ),
     )
+
     app.add_exception_handler(
         ArtistNotFound,
         create_exception_handler(

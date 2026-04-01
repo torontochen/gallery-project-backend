@@ -10,8 +10,7 @@ class Settings(BaseSettings):
     STRIPE_SECRET_KEY: str
     STRIPE_WEBHOOK_SECRET: str
     BASE_URL: str
-    # JWT_ALGORITHM: str
-    # REDIS_URL: str = "redis://localhost:6379/0"
+    REDIS_URL: str = "redis://localhost:6379/0"
     # MAIL_USERNAME: str
     # MAIL_PASSWORD: str
     # MAIL_FROM: str

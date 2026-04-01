@@ -4,7 +4,7 @@ from src.arts.routes import art_router
 from src.shopping_cart.routes import shopping_cart_router
 # from src.tags.routes import tags_router
 # from .errors import register_all_errors
-# from .middleware import register_middleware
+from .middleware import register_middleware
 
 
 version = "v1"
@@ -38,7 +38,7 @@ app = FastAPI(
 
 # register_all_errors(app)
 
-# register_middleware(app)
+register_middleware(app)
 
 
 app.include_router(art_router, prefix=f"{version_prefix}/arts", tags=["arts"])

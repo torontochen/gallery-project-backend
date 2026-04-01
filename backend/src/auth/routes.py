@@ -1,12 +1,13 @@
 from datetime import datetime, timedelta
+from typing import Annotated, Optional
 
-from fastapi import APIRouter, Depends, status, BackgroundTasks
+from fastapi import APIRouter, Depends, status, BackgroundTasks, Response, Cookie, Request
 from fastapi.exceptions import HTTPException
 from fastapi.responses import JSONResponse
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from src.db.main import get_session
-# from src.db.redis import add_jti_to_blocklist
+from src.db.redis import add_jti_to_blocklist
 
 from .dependencies import (
     AccessTokenBearer,
@@ -29,6 +30,7 @@ from .utils import (
     generate_passwd_hash,
     create_url_safe_token,
     decode_url_safe_token,
+    decode_token,
 )
 from src.errors import UserAlreadyExists, UserNotFound, InvalidCredentials, InvalidToken
 from src.config import Config
@@ -39,7 +41,7 @@ user_service = UserService()
 role_checker = RoleChecker(["admin", "user"])
 
 
-REFRESH_TOKEN_EXPIRY = 2
+REFRESH_TOKEN_EXPIRY = 10
 
 
 # Bearer Token
@@ -97,6 +99,12 @@ async def create_user_Account(
         "user": new_user,
     }
 
+@auth_router.get("/check-user/{email}")
+async def check_user_exists(email: str, session: AsyncSession = Depends(get_session)):
+    user_exists = await user_service.user_exists(email, session)
+
+    return JSONResponse(content={"exists": user_exists})
+
 
 @auth_router.get("/verify/{token}")
 async def verify_user_account(token: str, session: AsyncSession = Depends(get_session)):
@@ -126,8 +134,8 @@ async def verify_user_account(token: str, session: AsyncSession = Depends(get_se
 
 @auth_router.post("/login")
 async def login_users(
-    login_data: UserLoginModel, session: AsyncSession = Depends(get_session)
-):
+   login_data: UserLoginModel, session: AsyncSession = Depends(get_session)):
+    print("Login Attempt:", login_data)
     email = login_data.email
     password = login_data.password
 
@@ -153,28 +161,83 @@ async def login_users(
                 expiry=timedelta(days=REFRESH_TOKEN_EXPIRY),
             )
 
-            return JSONResponse(
+            response = JSONResponse(
                 content={
                     "message": "Login successful",
                     "access_token": access_token,
                     "refresh_token": refresh_token,
-                    "user": {"email": user.email, "uid": str(user.uid)},
+                    "user": {
+                        "uid": str(user.uid),
+                        "email": user.email, 
+                        "first_name": user.first_name,
+                        "username": user.username,  
+                        "last_name": user.last_name,
+                        "is_verified": user.is_verified,
+                        "role": user.role,
+                        "bio": user.bio,
+                        "country": user.country,
+                        "address": user.address,
+                        "delivery_address": user.delivery_address,
+                        "phone_number": user.phone_number
+                    },
                 }
-            )
+            )  
 
-    raise InvalidCredentials()
+            response.set_cookie(
+                    key="refresh_token",
+                    value=refresh_token,
+                    httponly=True,      # Prevents JavaScript access (XSS protection)
+                    samesite="lax",  # Blocks the cookie on cross-site requests (CSRF protection)
+                    secure=False,        # Only sends the cookie over HTTPS
+                    max_age=600000,     # Expiration in seconds (e.g., 7 days)
+                    path="http://localhost:8000/api/auth/refresh_token" # Recommended: restrict cookie to the refresh endpoint
+                )
 
 
-@auth_router.get("/refresh_token")
-async def get_new_access_token(token_details: dict = Depends(RefreshTokenBearer())):
+            return response
+
+    # raise InvalidCredentials()
+    raise HTTPException(
+            detail="Invalid Email Or Password !", status_code=status.HTTP_400_BAD_REQUEST
+        )
+   
+
+
+@auth_router.post("/refresh_token")
+# async def get_new_access_token(token_details: dict = Depends(RefreshTokenBearer())):
+# async def get_new_access_token(refresh_token: Annotated[str | None, Cookie()] = None):
+# async def get_new_access_token(refresh_token: Optional[str] = Cookie(None)):
+async def get_new_access_token(request: Request, session: AsyncSession = Depends(get_session)):
+    refresh_token = request.cookies.get("refresh_token")
+    # print("Refresh Token Request Received. Refresh Token:", refresh_token)
+    if not refresh_token:
+        return {"error": "Refresh token missing"}
+    token_details = decode_token(refresh_token)    
     expiry_timestamp = token_details["exp"]
 
     if datetime.fromtimestamp(expiry_timestamp) > datetime.now():
+        print("token details", token_details)
         new_access_token = create_access_token(user_data=token_details["user"])
+        email = token_details["user"]["email"]
+        user = await user_service.get_user_by_email(email, session)
+        # print("New Access Token:", new_access_token)
 
-        return JSONResponse(content={"access_token": new_access_token})
+        return JSONResponse(content={"access_token": new_access_token, "user": {
+                        "uid": str(user.uid),
+                        "email": user.email, 
+                        "first_name": user.first_name,
+                        "username": user.username,  
+                        "last_name": user.last_name,
+                        "is_verified": user.is_verified,
+                        "role": user.role,
+                        "bio": user.bio,
+                        "country": user.country,
+                        "address": user.address,
+                        "delivery_address": user.delivery_address,
+                        "phone_number": user.phone_number
+                    }})
 
-    raise InvalidToken
+    raise InvalidToken()
 
 
 # @auth_router.get("/me", response_model=UserBooksModel)
@@ -184,9 +247,12 @@ async def get_new_access_token(token_details: dict = Depends(RefreshTokenBearer(
 #     return user
 
 
-@auth_router.get("/logout")
+@auth_router.post("/logout")
 async def revoke_token(token_details: dict = Depends(AccessTokenBearer())):
+
+    print("Logout Request Received. Token Details:", token_details)
     jti = token_details["jti"]
+    print("Revoking token with JTI:", jti)
 
     await add_jti_to_blocklist(jti)
 
