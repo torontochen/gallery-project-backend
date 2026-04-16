@@ -31,36 +31,38 @@ class TokenBearer(HTTPBearer):
     async def __call__(self, request: Request) -> HTTPAuthorizationCredentials | None:
         creds = await super().__call__(request)
 
-        print(f"Received credentials: {creds}")
+        # print(f"Received credentials: {creds}")
 
         token = creds.credentials
 
         token_data = decode_token(token)
-        print(f"Decoded token data: {token_data}")
+        # print(f"Decoded token data: {token_data}")
 
         if not self.token_valid(token):
-            print("Token is invalid or expired")
+            # print("Token is invalid or expired")
             raise HTTPException(
             detail={
                 "message": "Token is invalid Or expired",
                 "resolution": "Please get new token",
                 "error_code": "invalid_token",
-            }, status_code=status.HTTP_401_BAD_REQUEST
+            }, status_code=status.HTTP_401_UNAUTHORIZED
         )
 
         if await token_in_blocklist(token_data["jti"]):
-            print("Token is in blocklist")
+            # print("Token is in blocklist")
             raise HTTPException(
             detail={
                 "message": "Token is invalid Or expired",
                 "resolution": "Please get new token",
                 "error_code": "invalid_token",
-            }, status_code=status.HTTP_401_BAD_REQUEST
+            }, status_code=status.HTTP_401_UNAUTHORIZED
         )
 
         self.verify_token_data(token_data)
-
+        # print(f"Token data after verification: {token_data}")
         return token_data
+
+
 
     def token_valid(self, token: str) -> bool:
         token_data = decode_token(token)
@@ -68,6 +70,7 @@ class TokenBearer(HTTPBearer):
         print(f"Token data in token_valid: {token_data}")
 
         return token_data is not None
+
 
 
     def verify_token_data(self, token_data):
@@ -83,8 +86,8 @@ class AccessTokenBearer(TokenBearer):
                 "message": "Please provide a valid access token",
                 "resolution": "Please get an access token",
                 "error_code": "access_token_required",
-            }, status_code=status.HTTP_401_BAD_REQUEST
-        )
+            }, status_code=status.HTTP_401_UNAUTHORIZED
+            )
 
 
 class RefreshTokenBearer(TokenBearer):
@@ -97,6 +100,7 @@ async def get_current_user(
     token_details: dict = Depends(AccessTokenBearer()),
     session: AsyncSession = Depends(get_session),
 ):
+    # print(f"Token details in get_current_user: {token_details}")
     user_email = token_details["user"]["email"]
 
     user = await user_service.get_user_by_email(user_email, session)

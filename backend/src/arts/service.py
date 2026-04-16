@@ -10,6 +10,12 @@ from src.arts.schemas import ArtModel, ArtUpdateModel, ArtCreateModel
 from src.db.models import Art
 
 class ArtService:
+    async def get_all_arts(self, session: AsyncSession) -> List[Art]:
+        statement = select(Art).order_by(desc(Art.creation_date))
+        result = await session.exec(statement)
+        arts = result.all()
+        return arts
+
     async def get_arts_by_artist(self, artist_id: str, session: AsyncSession):
         statement = select(Art).where(Art.artist_id == artist_id).order_by(desc(Art.creation_date))
         result = await session.exec(statement)

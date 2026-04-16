@@ -37,6 +37,13 @@ async def get_art_by_id(
     else:
         return art
 
+@art_router.get("/", response_model=List[ArtModel])
+async def get_all_arts(
+    session: AsyncSession = Depends(get_session),
+):
+    arts = await art_service.get_all_arts(session)
+    return arts
+
 # @art_router.post("/", response_model=ArtModel, status_code=status.HTTP_201_CREATED, dependencies=[role_checker])
 @art_router.post("/", response_model=ArtModel, status_code=status.HTTP_201_CREATED)
 async def create_art(

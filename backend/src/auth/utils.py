@@ -12,7 +12,7 @@ from src.config import Config
 passwd_context = CryptContext(schemes=["bcrypt"])
 
 
-ACCESS_TOKEN_EXPIRY = 3600
+ACCESS_TOKEN_EXPIRY = 10
 
 
 def generate_passwd_hash(password: str) -> str:

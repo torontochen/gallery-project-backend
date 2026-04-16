@@ -3,7 +3,7 @@ from typing import Annotated, Optional
 
 from fastapi import APIRouter, Depends, status, BackgroundTasks, Response, Cookie, Request
 from fastapi.exceptions import HTTPException
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, RedirectResponse
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from src.db.main import get_session
@@ -13,15 +13,16 @@ from .dependencies import (
     AccessTokenBearer,
     RefreshTokenBearer,
     RoleChecker,
-    get_current_user,
 )
 from .schemas import (
-    # UserBooksModel,
+    ArtistProfileModel,
     UserCreateModel,
     UserLoginModel,
     EmailModel,
     PasswordResetRequestModel,
     PasswordResetConfirmModel,
+    ProfileUpdateModel,
+    UserModel,
 )
 from .service import UserService
 from .utils import (
@@ -34,7 +35,7 @@ from .utils import (
 )
 from src.errors import UserAlreadyExists, UserNotFound, InvalidCredentials, InvalidToken
 from src.config import Config
-# from src.celery_tasks import send_email
+from src.celery_tasks import send_email
 
 auth_router = APIRouter()
 user_service = UserService()
@@ -61,7 +62,7 @@ async def send_mail(emails: EmailModel):
 
 @auth_router.post("/signup", status_code=status.HTTP_201_CREATED)
 async def create_user_Account(
-    user_data: UserCreateModel,
+    user_data: ProfileUpdateModel,
     bg_tasks: BackgroundTasks,
     session: AsyncSession = Depends(get_session),
 ):
@@ -81,18 +82,24 @@ async def create_user_Account(
 
     token = create_url_safe_token({"email": email})
 
-    link = f"http://{Config.BASE_URL}/api/v1/auth/verify/{token}"
+    link = f"http://{Config.DOMAIN}/api/auth/verify/{token}"
 
-    html = f"""
-    <h1>Verify your Email</h1>
-    <p>Please click this <a href="{link}">link</a> to verify your email</p>
-    """
+    # html = f"""
+    # <h1>Verify your Email</h1>
+    # <p>Please click this <a href="{link}">link</a> to verify your email</p>
+    # """
+
+    template_name = "auth_confirmation_email.html"
+    template_body = {"name": new_user.username, 
+    "verification_link": link, 
+    "message": "Thank you for registering Monohaus Gallery. Please click to verify your email",
+    "function": "Verify Email"}
 
     emails = [email]
 
     subject = "Verify Your email"
 
-    # send_email.delay(emails, subject, html)
+    send_email.delay(emails, subject, template_body, template_name)
 
     return {
         "message": "Account Created! Check email to verify your account",
@@ -121,10 +128,14 @@ async def verify_user_account(token: str, session: AsyncSession = Depends(get_se
 
         await user_service.update_user(user, {"is_verified": True}, session)
 
-        return JSONResponse(
-            content={"message": "Account verified successfully"},
-            status_code=status.HTTP_200_OK,
-        )
+        # return JSONResponse(
+        #     content={"message": "Account verified successfully"},
+        #     status_code=status.HTTP_200_OK,
+        # )
+        return RedirectResponse(
+            url="http://localhost:5173/auth", 
+            status_code=status.HTTP_303_SEE_OTHER
+         )
 
     return JSONResponse(
         content={"message": "Error occured during verification"},
@@ -132,14 +143,47 @@ async def verify_user_account(token: str, session: AsyncSession = Depends(get_se
     )
 
 
+@auth_router.get("/")
+async def get_all_artists(session: AsyncSession = Depends(get_session), response_model=ArtistProfileModel):
+    artists = await user_service.get_all_artists(session)
+    return artists
+
+@auth_router.post("/update-profile")
+async def update_user_profile(user_data: ProfileUpdateModel, session: AsyncSession = Depends(get_session), token_details: dict = Depends(AccessTokenBearer()), response_model=UserModel):
+    print("Profile update data:", user_data)
+    print("Received profile update request for user:", token_details)
+    user = await user_service.get_user_by_email(token_details["user"]["email"], session)
+    if not user:
+        raise UserNotFound()
+    user_data_dict = user_data.model_dump(exclude_unset=True)
+    print("User data dict after excluding unset fields:", user_data_dict)
+    user_data_dict["hashed_password"] = generate_passwd_hash(user_data_dict["password"]) if user_data_dict["password"] != "None" else user.hashed_password
+    user_data_dict.pop("password", None)  # Remove the plain password from the dict
+    if user_data_dict["first_name"] is not None:    
+            user_data_dict["username"] = user_data_dict["first_name"]
+
+    updated_user = await user_service.update_user(user, user_data_dict, session)
+
+    # return JSONResponse(content={"message": "Profile Updated Successfully", "user": updated_user})
+    return  updated_user
+
 @auth_router.post("/login")
 async def login_users(
    login_data: UserLoginModel, session: AsyncSession = Depends(get_session)):
-    print("Login Attempt:", login_data)
+    # print("Login Attempt:", login_data)
     email = login_data.email
     password = login_data.password
+    isTrustedDevice = login_data.isTrustedDevice
 
     user = await user_service.get_user_by_email(email, session)
+    if user.shopping_cart:
+        shopping_cart = user.shopping_cart.model_dump()  
+        print("user shopping cart", shopping_cart)
+        shopping_cart["user_id"] = str(shopping_cart["user_id"])
+        shopping_cart["added_date"] = str(shopping_cart["added_date"])
+        for index, item in enumerate(shopping_cart["arts"]):
+            shopping_cart["arts"][index]["art_id"] = str(item["art_id"])
+            shopping_cart["arts"][index]["added_at"] = str(item["added_at"])
 
     if user is not None:
         password_valid = verify_password(password, user.hashed_password)
@@ -155,6 +199,7 @@ async def login_users(
                 }
             )
 
+
             refresh_token = create_access_token(
                 user_data={"email": user.email, "user_uid": str(user.uid)},
                 refresh=True,
@@ -165,7 +210,7 @@ async def login_users(
                 content={
                     "message": "Login successful",
                     "access_token": access_token,
-                    "refresh_token": refresh_token,
+                    # "refresh_token": refresh_token if isTrustedDevice else None,
                     "user": {
                         "uid": str(user.uid),
                         "email": user.email, 
@@ -178,20 +223,22 @@ async def login_users(
                         "country": user.country,
                         "address": user.address,
                         "delivery_address": user.delivery_address,
-                        "phone_number": user.phone_number
+                        "phone_number": user.phone_number,
+                        "shopping_cart": shopping_cart if user.shopping_cart else None
                     },
                 }
             )  
 
-            response.set_cookie(
-                    key="refresh_token",
-                    value=refresh_token,
-                    httponly=True,      # Prevents JavaScript access (XSS protection)
-                    samesite="lax",  # Blocks the cookie on cross-site requests (CSRF protection)
-                    secure=False,        # Only sends the cookie over HTTPS
-                    max_age=600000,     # Expiration in seconds (e.g., 7 days)
-                    path="http://localhost:8000/api/auth/refresh_token" # Recommended: restrict cookie to the refresh endpoint
-                )
+            if isTrustedDevice:
+                response.set_cookie(
+                        key="refresh_token",
+                        value=refresh_token,
+                        httponly=True,      # Prevents JavaScript access (XSS protection)
+                        samesite="lax",  # Blocks the cookie on cross-site requests (CSRF protection)
+                        secure=False,        # Only sends the cookie over HTTPS
+                        max_age=600000,     # Expiration in seconds (e.g., 7 days)
+                        path="http://localhost:8000/api/auth/refresh_token" # Recommended: restrict cookie to the refresh endpoint
+                    )
 
 
             return response
@@ -209,18 +256,26 @@ async def login_users(
 # async def get_new_access_token(refresh_token: Optional[str] = Cookie(None)):
 async def get_new_access_token(request: Request, session: AsyncSession = Depends(get_session)):
     refresh_token = request.cookies.get("refresh_token")
-    # print("Refresh Token Request Received. Refresh Token:", refresh_token)
+    print("Refresh Token Request Received. Refresh Token:", refresh_token)
     if not refresh_token:
         return {"error": "Refresh token missing"}
     token_details = decode_token(refresh_token)    
     expiry_timestamp = token_details["exp"]
 
     if datetime.fromtimestamp(expiry_timestamp) > datetime.now():
-        print("token details", token_details)
+        # print("token details", token_details)
         new_access_token = create_access_token(user_data=token_details["user"])
         email = token_details["user"]["email"]
         user = await user_service.get_user_by_email(email, session)
-        # print("New Access Token:", new_access_token)
+        
+        if user.shopping_cart:
+            shopping_cart = user.shopping_cart.model_dump()  
+            print("user shopping cart", shopping_cart)
+            shopping_cart["user_id"] = str(shopping_cart["user_id"])
+            shopping_cart["added_date"] = str(shopping_cart["added_date"])
+            for index, item in enumerate(shopping_cart["arts"]):
+                shopping_cart["arts"][index]["art_id"] = str(item["art_id"])
+                shopping_cart["arts"][index]["added_at"] = str(item["added_at"])
 
         return JSONResponse(content={"access_token": new_access_token, "user": {
                         "uid": str(user.uid),
@@ -234,7 +289,9 @@ async def get_new_access_token(request: Request, session: AsyncSession = Depends
                         "country": user.country,
                         "address": user.address,
                         "delivery_address": user.delivery_address,
-                        "phone_number": user.phone_number
+                        "phone_number": user.phone_number,
+                        "avatar_url": user.avatar_url,
+                        "shopping_cart": shopping_cart if user.shopping_cart else None
                     }})
 
     raise InvalidToken()
@@ -250,15 +307,25 @@ async def get_new_access_token(request: Request, session: AsyncSession = Depends
 @auth_router.post("/logout")
 async def revoke_token(token_details: dict = Depends(AccessTokenBearer())):
 
-    print("Logout Request Received. Token Details:", token_details)
+    # print("Logout Request Received. Token Details:", token_details)
     jti = token_details["jti"]
     print("Revoking token with JTI:", jti)
 
     await add_jti_to_blocklist(jti)
 
-    return JSONResponse(
+    response = JSONResponse(
         content={"message": "Logged Out Successfully"}, status_code=status.HTTP_200_OK
     )
+
+    response.delete_cookie(
+        key="refresh_token",
+        path="http://localhost:8000/api/auth/refresh_token",        # Must match the original path
+        httponly=True,   # Security best practice
+        samesite="lax",  # Or 'strict' based on your original settings
+        secure=False      # Recommended for production HTTPS
+    )
+
+    return response
 
 
 
@@ -268,15 +335,33 @@ async def password_reset_request(email_data: PasswordResetRequestModel):
 
     token = create_url_safe_token({"email": email})
 
-    link = f"http://{Config.DOMAIN}/api/v1/auth/password-reset-confirm/{token}"
+    # link = f"http://{Config.DOMAIN}/api/auth/password-reset-confirm/{token}"
+    link = f"http://localhost:5173/reset-password/{token}"
 
-    html_message = f"""
-    <h1>Reset Your Password</h1>
-    <p>Please click this <a href="{link}">link</a> to Reset Your Password</p>
-    """
+    # html_message = f"""
+    # <h1>Reset Your Password</h1>
+    # <p>Please click this <a href="{link}">link</a> to Reset Your Password</p>
+    # """
+
+    template_name = "auth_confirmation_email.html"
+    template_body = {"name": email, 
+    "verification_link": link, 
+    "message": "Thank you for choosing Monohaus Gallery. Please click to reset your password",
+    "function": "Reset Password"}
+
+    emails = [email]
+
+
     subject = "Reset Your Password"
 
-    send_email.delay([email], subject, html_message)
+    # send_email.delay([email], subject, html_message)
+    send_email.delay(emails, subject, template_body, template_name)
+
+    # return RedirectResponse(
+    #         url="http://localhost:5173/reset-password", 
+    #         status_code=status.HTTP_303_SEE_OTHER
+    #      )
+
     return JSONResponse(
         content={
             "message": "Please check your email for instructions to reset your password",
@@ -291,6 +376,8 @@ async def reset_account_password(
     passwords: PasswordResetConfirmModel,
     session: AsyncSession = Depends(get_session),
 ):
+    print("Password reset confirmation received. Token:", token)
+    print("New password data:", passwords)
     new_password = passwords.new_password
     confirm_password = passwords.confirm_new_password
 
@@ -310,7 +397,7 @@ async def reset_account_password(
             raise UserNotFound()
 
         passwd_hash = generate_passwd_hash(new_password)
-        await user_service.update_user(user, {"password_hash": passwd_hash}, session)
+        await user_service.update_user(user, {"hashed_password": passwd_hash}, session)
 
         return JSONResponse(
             content={"message": "Password reset Successfully"},

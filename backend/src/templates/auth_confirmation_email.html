@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <style>
+      #container {
+        background-color: #f9f9f9;
+        width: 50%;
+        height: 80vh;
+        margin: auto;
+        font-family: "Inter", sans-serif;
+      }
+
+      .main {
+        margin-top: 4rem;
+        width: 100%;
+      }
+
+      h2 {
+        color: #6c6a6a;
+        width: 100%;
+      }
+
+      p {
+        color: #6c6a6a;
+        font-size: large;
+      }
+
+      a {
+        display: block;
+      }
+
+      #btn {
+        background-color: #6c6a6a;
+        border: none;
+        color: #f9f9f9;
+        padding: 0.8rem 1.5rem;
+        text-align: center;
+        font-size: 1.2rem;
+        cursor: pointer;
+        border-radius: 5px;
+        margin: 2rem auto;
+        display: inline-block;
+      }
+
+      #btn:hover {
+        background-color: #c2bcbc;
+        cursor: pointer;
+      }
+
+      #footer {
+        margin: auto;
+        display: inline-block;
+        width: 100%;
+        text-align: center;
+        background-color: #6c6a6a;
+        color: white;
+        padding: 1rem 0;
+        font-weight: semi-bold;
+        font-size: 1.5rem;
+      }
+    </style>
+  </head>
+
+  <body>
+    <table id="container" width="100%">
+      <thead>
+        <tr class="main">
+          <th>
+            <img
+              src="https://dvcentdtlqiksqjrwnvc.supabase.co/storage/v1/object/sign/arts/logo/verti-logo.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV80YmJhNWIxMi05Y2YzLTRlODQtOTI1MS05M2I0NTMxNGFlNTUiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJhcnRzL2xvZ28vdmVydGktbG9nby5wbmciLCJpYXQiOjE3NzU4Njk4ODMsImV4cCI6MTgwNzQwNTg4M30.fg7I0Ccf2dFHND_A1HBDaAfpQVVCuSN-hH8Sx3Pcp3s"
+              width="200"
+              height="200"
+            />
+          </th>
+        </tr>
+        <tr class="main">
+          <th>
+            <h2>Hi {{name}}:</h2>
+          </th>
+        </tr>
+        <tr class="main">
+          <th>
+            <p>{{message}}</p>
+          </th>
+        </tr>
+        <tr class="main">
+          <th>
+            <a href="{{verification_link}}"
+              ><button type="button" id="btn">{{function}}</button></a
+            >
+          </th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+      <tfoot>
+        <tr>
+          <td id="footer">
+            <span>Art In Dream</span>
+          </td>
+        </tr>
+      </tfoot>
+    </table>
+  </body>
+</html>

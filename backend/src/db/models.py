@@ -3,7 +3,7 @@ from datetime import datetime, date
 from typing import Optional, List
 import sqlalchemy.dialects.postgresql as pg
 from sqlalchemy.ext.mutable import MutableDict, MutableList
-from sqlmodel import Field, SQLModel, Relationship, Column,  UniqueConstraint
+from sqlmodel import Field, SQLModel, Relationship, Column,  UniqueConstraint, ForeignKey
 
 class User(SQLModel, table=True):
     __tablename__ = "users"
@@ -12,16 +12,18 @@ class User(SQLModel, table=True):
     )
     username: str = Field(index=True, unique=True)
     email: str = Field(index=True, unique=True)
-    first_name: str
-    last_name: str
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    avatar_url: Optional[str] = None
     role: str = Field(default="user")
     bio: Optional[str] = None
     country: Optional[str] = None
     hashed_password: str = Field( sa_column=Column(pg.VARCHAR, nullable=False), exclude=True)
-    is_verified: bool = Field(default=True)
+    is_verified: bool = Field(default=False)
     address: Optional[str] = None
     delivery_address: Optional[str] = None
     phone_number: Optional[str] = None
+    # shopping_cart_id: Optional[uuid.UUID] = Field(default = None, foreign_key="shopping_carts.uid")
     transactions: Optional[List["Transaction"]] = Relationship(back_populates="user", sa_relationship_kwargs={"lazy": "selectin"})
     shopping_cart: Optional["ShoppingCart"] = Relationship(back_populates="user", sa_relationship_kwargs={"lazy": "selectin"})
     arts: Optional[List["Art"]] = Relationship(back_populates="artist", sa_relationship_kwargs={"lazy": "selectin"})
@@ -79,10 +81,11 @@ class Transaction(SQLModel, table=True):
 
 class ShoppingCart(SQLModel, table=True):
     __tablename__ = "shopping_carts"
-    uid: uuid.UUID = Field(
-        sa_column=Column(pg.UUID, nullable=False, primary_key=True, default=uuid.uuid4)
-    )
-    user_id: uuid.UUID = Field(foreign_key="users.uid")
+    # uid: uuid.UUID = Field(
+    #     sa_column=Column(pg.UUID, nullable=False, primary_key=True, default=uuid.uuid4)
+    # )
+    user_id: uuid.UUID = Field(sa_column=Column(pg.UUID, ForeignKey('users.uid'), primary_key=True, nullable=False,  default=uuid.uuid4))
+    # Column(Integer, ForeignKey('user.id'), primary_key=True)
     # work_id: uuid.UUID = Field(foreign_key="works.uid")
     added_date: datetime = Field(sa_column=Column(pg.TIMESTAMP, default=datetime.utcnow))
     arts: List["Art"] = Field(sa_type=MutableList.as_mutable(pg.JSON))  # This will be a list of Art items in the cart
