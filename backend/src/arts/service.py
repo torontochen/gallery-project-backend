@@ -9,15 +9,26 @@ from src.auth.dependencies import AccessTokenBearer, RoleChecker
 from src.arts.schemas import ArtModel, ArtUpdateModel, ArtCreateModel
 from src.db.models import Art
 
+
 class ArtService:
     async def get_all_arts(self, session: AsyncSession) -> List[Art]:
-        statement = select(Art).order_by(desc(Art.creation_date))
+        statement = (
+            select(Art)
+            .where(Art.status == "available")
+            .order_by(desc(Art.creation_date))
+        )
         result = await session.exec(statement)
+        print("result is", result)
         arts = result.all()
+        print("arts found are", arts)
         return arts
 
     async def get_arts_by_artist(self, artist_id: str, session: AsyncSession):
-        statement = select(Art).where(Art.artist_id == artist_id).order_by(desc(Art.creation_date))
+        statement = (
+            select(Art)
+            .where(Art.artist_id == artist_id)
+            .order_by(desc(Art.creation_date))
+        )
         result = await session.exec(statement)
         arts = result.all()
         return arts
@@ -41,7 +52,9 @@ class ArtService:
         await session.refresh(new_art)
         return new_art
 
-    async def update_art(self, art_uid: str, update_data: ArtUpdateModel, session: AsyncSession):
+    async def update_art(
+        self, art_uid: str, update_data: ArtUpdateModel, session: AsyncSession
+    ):
         art_to_update = await self.get_art_by_id(art_uid, session)
         if art_to_update is not None:
             update_data_dict = update_data.model_dump()

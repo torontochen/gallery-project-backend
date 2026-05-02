@@ -43,5 +43,5 @@ register_middleware(app)
 
 app.include_router(art_router, prefix=f"{version_prefix}/arts", tags=["arts"])
 app.include_router(auth_router, prefix=f"{version_prefix}/auth", tags=["auth"])
-app.include_router(shopping_cart_router, prefix=f"{version_prefix}/shoppingcart", tags=["shoppingcart"])
+app.include_router(shopping_cart_router, prefix=f"{version_prefix}/shopping_cart", tags=["shoppingcart"])
 # app.include_router(tags_router, prefix=f"{version_prefix}/tags", tags=["tags"])

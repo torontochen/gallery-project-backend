@@ -5,14 +5,16 @@ stripe.api_key = Config.STRIPE_SECRET_KEY
 
 
 async def create_dynamic_customer(customer_data: StripeCustomerModel):
+    print("Creating Stripe customer with data:", customer_data)
     customer =  stripe.Customer.create(
         email=customer_data["email"],
         name=customer_data["name"],
         phone=customer_data["phone"],
-        address=customer_data["delivery_address"],
+        # address=customer_data["delivery_address"],
         # Metadata is crucial for linking back to your internal database
         metadata={
             'internal_user_id': customer_data["user_id_internal"],
         }
     )
+    print("Stripe customer created:", customer)
     return customer

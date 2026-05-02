@@ -180,6 +180,7 @@ async def login_users(
         shopping_cart = user.shopping_cart.model_dump()  
         print("user shopping cart", shopping_cart)
         shopping_cart["user_id"] = str(shopping_cart["user_id"])
+        shopping_cart["uid"] = str(shopping_cart["uid"])
         shopping_cart["added_date"] = str(shopping_cart["added_date"])
         for index, item in enumerate(shopping_cart["arts"]):
             shopping_cart["arts"][index]["art_id"] = str(item["art_id"])
@@ -273,6 +274,8 @@ async def get_new_access_token(request: Request, session: AsyncSession = Depends
             print("user shopping cart", shopping_cart)
             shopping_cart["user_id"] = str(shopping_cart["user_id"])
             shopping_cart["added_date"] = str(shopping_cart["added_date"])
+            shopping_cart["uid"] = str(shopping_cart["uid"])
+
             for index, item in enumerate(shopping_cart["arts"]):
                 shopping_cart["arts"][index]["art_id"] = str(item["art_id"])
                 shopping_cart["arts"][index]["added_at"] = str(item["added_at"])

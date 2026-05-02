@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime, date
-from typing import Optional, List
+from typing import Optional, List, Union
 import sqlalchemy.dialects.postgresql as pg
 from sqlalchemy.ext.mutable import MutableDict, MutableList
 from sqlmodel import Field, SQLModel, Relationship, Column,  UniqueConstraint, ForeignKey
@@ -54,6 +54,8 @@ class Art(SQLModel, table=True):
     creation_date:  datetime = Field(default=datetime.utcnow)
     price: float
     status: str = Field(default="available")
+    genres: Optional[str] = None
+    medium: Optional[str] = None
     image_url: str
     artist_id: uuid.UUID = Field(foreign_key="users.uid")
     transaction_id: Optional[uuid.UUID] = Field(default = None, foreign_key="transactions.uid")
@@ -81,11 +83,12 @@ class Transaction(SQLModel, table=True):
 
 class ShoppingCart(SQLModel, table=True):
     __tablename__ = "shopping_carts"
-    # uid: uuid.UUID = Field(
-    #     sa_column=Column(pg.UUID, nullable=False, primary_key=True, default=uuid.uuid4)
-    # )
-    user_id: uuid.UUID = Field(sa_column=Column(pg.UUID, ForeignKey('users.uid'), primary_key=True, nullable=False,  default=uuid.uuid4))
+    uid: uuid.UUID = Field(
+        sa_column=Column(pg.UUID, nullable=False, primary_key=True, default=uuid.uuid4)
+    )
     # Column(Integer, ForeignKey('user.id'), primary_key=True)
+    # user_id: uuid.UUID = Field(sa_column=Column(pg.UUID, ForeignKey('users.uid'), primary_key=True, nullable=False,  default=uuid.uuid4))
+    user_id: uuid.UUID = Field(sa_column=Column(pg.UUID, ForeignKey('users.uid'), nullable=False,  default=uuid.uuid4))
     # work_id: uuid.UUID = Field(foreign_key="works.uid")
     added_date: datetime = Field(sa_column=Column(pg.TIMESTAMP, default=datetime.utcnow))
     arts: List["Art"] = Field(sa_type=MutableList.as_mutable(pg.JSON))  # This will be a list of Art items in the cart

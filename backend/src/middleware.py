@@ -25,7 +25,7 @@ def register_middleware(app: FastAPI):
 
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["http://localhost:5173","redis://localhost:6379"],
+        allow_origins=["http://localhost:5173","http://localhost:8000/*","redis://localhost:6379","https://dashboard.stripe.com/*"],
         allow_methods=["*"],
         allow_headers=["*"],
         allow_credentials=True,
@@ -33,5 +33,5 @@ def register_middleware(app: FastAPI):
 
     app.add_middleware(
         TrustedHostMiddleware,
-        allowed_hosts=["localhost", "127.0.0.1" ,"bookly-api-dc03.onrender.com","0.0.0.0"],
+        allowed_hosts=["localhost","127.0.0.1","bookly-api-dc03.onrender.com","0.0.0.0","checkout.stripe.com","dashboard.stripe.com"],
     )

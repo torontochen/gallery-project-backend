@@ -18,9 +18,11 @@ class ArtModel(BaseModel):
     creation_date: datetime
     price: float
     image_url: str
+    genres: Optional[str] = None
+    medium: Optional[str] = None
     artist: UserModel 
     transaction_id: Optional[uuid.UUID] = None
-    shopping_cart: Optional[uuid.UUID] = None
+    # shopping_cart: Optional[uuid.UUID] = None
 
 class ArtCreateModel(BaseModel):
     title: str
@@ -28,6 +30,8 @@ class ArtCreateModel(BaseModel):
     creation_date: datetime = datetime.utcnow()
     price: float
     image_url: str
+    genres: Optional[str] = None
+    medium: Optional[str] = None
     artist_id: uuid.UUID
 
 class ArtUpdateModel(BaseModel):
