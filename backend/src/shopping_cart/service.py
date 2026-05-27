@@ -25,7 +25,7 @@ class ShoppingCartService:
             .order_by(ShoppingCart.added_date.desc())
         )
         result = await session.exec(statement)
-        print(result)
+        # print(result)
         item = result.first()
         return item
 
@@ -40,7 +40,7 @@ class ShoppingCartService:
         user_cart = user_cart_data.first()
         if user_cart is None:
             item_data_dict = item_data.model_dump()
-            print("None")
+            # print("None")
             item_data_dict["art_id"] = str(item_data_dict["art_id"])
             item_data_dict["added_at"] = str(item_data_dict["added_at"])
             art_list = []
@@ -71,7 +71,7 @@ class ShoppingCartService:
         result = await session.exec(statement)
         item = result.first()
         item_dict = item.model_dump()
-        print(item_dict)
+        # print(item_dict)
         if item:
             item.arts = [
                 art for art in item_dict["arts"] if art["art_id"] != update_data.art_id

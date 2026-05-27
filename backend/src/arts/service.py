@@ -18,9 +18,9 @@ class ArtService:
             .order_by(desc(Art.creation_date))
         )
         result = await session.exec(statement)
-        print("result is", result)
+        # print("result is", result)
         arts = result.all()
-        print("arts found are", arts)
+        # print("arts found are", arts)
         return arts
 
     async def get_arts_by_artist(self, artist_id: str, session: AsyncSession):
@@ -34,11 +34,11 @@ class ArtService:
         return arts
 
     async def get_art_by_id(self, art_uid: str, session: AsyncSession):
-        print("art uid received is", art_uid)
+        # print("art uid received is", art_uid)
         statement = select(Art).where(Art.uid == art_uid)
         result = await session.exec(statement)
         art = result.first()
-        print("art found is", art)
+        # print("art found is", art)
         # session.add(new_work)
         # await session.commit()
         # await session.refresh(new_work)

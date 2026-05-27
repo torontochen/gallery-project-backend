@@ -95,13 +95,13 @@ async def create_checkout_session(
     token_details: dict = Depends(access_token_bearer),
     session: AsyncSession = Depends(get_session),
 ):
-    print("order id is", orderId)
+    # print("order id is", orderId)
     user_id = token_details.get("user")["user_uid"]
-    print("user id is", type(user_id))
+    # print("user id is", type(user_id))
     user_email = token_details.get("user")["email"]
     user = await user_service.get_user_by_email(user_email, session)
     user_name = user.first_name + " " + user.last_name
-    print("user is", user)
+    # print("user is", user)
     customer_data = {
         "email": user_email,
         "name": user_name,
@@ -167,7 +167,7 @@ async def create_checkout_session(
 async def payment_success(session_id: str):
     try:
         session = await stripe.checkout.Session.retrieve_async(checkout_session)
-        print("Session details:", session)
+        # print("Session details:", session)
 
         if session.payment_status == "paid":
             # TODO: Here, you could save the order to your database
@@ -228,8 +228,8 @@ async def stripe_webhook(
         card_details = payment_intent.payment_method.card
         last4 = card_details.last4
         brand = card_details.brand
-        print("PaymentIntent details:", payment_intent)
-        print("checkout.session.completed", event)
+        # print("PaymentIntent details:", payment_intent)
+        # print("checkout.session.completed", event)
         payment = event["data"]["object"]
         amount = payment["amount_total"]
         currency = payment["currency"]

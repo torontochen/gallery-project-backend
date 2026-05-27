@@ -13,7 +13,7 @@
 
       th,
       td {
-        padding: 0 30px;
+        padding: 0 50px;
       }
 
       .main {
@@ -27,7 +27,7 @@
 
       h3 {
         color: #313131;
-        width: 90%;
+        width: 100%;
         text-decoration: none;
         text-align: left;
         margin: auto;
@@ -39,7 +39,7 @@
         font-size: 14px;
         font-weight: 500;
         line-height: 2rem;
-        width: 90%;
+        width: 100%;
         margin: auto;
         text-align: left;
       }
@@ -49,7 +49,7 @@
       }
 
       .image {
-        width: 30%;
+        width: 20%;
         text-align: center;
       }
 
@@ -68,15 +68,14 @@
 
       .tax {
         text-overflow: ellipsis;
-        font-size: 15px;
+        font-size: 14px;
         color: #2e2d2d;
-        margin-left: 2px;
         text-align: right;
       }
 
       .totalAmount {
         text-overflow: ellipsis;
-        font-size: 14px;
+        font-size: 16px;
         color: #2e2d2d;
         text-align: right;
       }
@@ -86,6 +85,7 @@
         font-size: 14px;
         color: #2e2d2d;
         text-align: right;
+        width: 30%;
       }
 
       #line {
@@ -93,14 +93,13 @@
       }
 
       #footer {
-        margin-top: 1rem;
         width: 100%;
         text-align: center;
         background-color: #6c6a6a;
         color: white;
-        padding: 0.5rem 0;
+        padding: 0.3rem 0;
         font-weight: semi-bold;
-        font-size: 1.5rem;
+        font-size: 1.2rem;
       }
     </style>
   </head>
@@ -128,6 +127,7 @@
           </th>
         </tr>
       </thead>
+      <tr height="5"></tr>
       {% for item in item_list%}
       <tr>
         <td class="image">
@@ -136,37 +136,36 @@
         <td class="text">
           {{item.title}} by {{item.artist}} {{item.description}} {{item.medium}}
         </td>
-        <td class="total">${{item.price | round(2)}}</td>
+        <td class="total">{{"${:,.2f}".format(item.price | float)}}</td>
       </tr>
 
       {% endfor %}
+      <tr height="15"></tr>
       <tr height="1" id="line"></tr>
       <tr height="15"></tr>
 
       <tr class="tax">
         <td></td>
         <td>Subtotal:</td>
-        <td>${{"%.2f" | format(subtotal | float)}}</td>
+        <td>{{"${:,.2f}".format(subtotal | float)}}</td>
       </tr>
-      <tr height="5"></tr>
       <tr class="tax">
         <td></td>
         <td>Tax:</td>
-        <td>${{"%.2f" | format(tax | float)}}</td>
+        <td>{{"${:,.2f}".format(tax | float)}}</td>
       </tr>
-      <tr height="5"></tr>
 
       <tr class="totalAmount">
         <td></td>
         <td><strong>Total:</strong></td>
-        <td><strong>${{"%.2f" | format(total_amount | float)}}</strong></td>
+        <td><strong>{{"${:,.2f}".format(total_amount | float)}}</strong></td>
       </tr>
       <!-- </tbody> -->
       <!-- <tfoot > -->
-      <tr height="10"></tr>
+      <tr height="15"></tr>
       <tr>
         <td colspan="3" id="footer">
-          <span>Art In Dream</span>
+          <span>Arts In Dream</span>
         </td>
       </tr>
       <!-- </tfoot> -->

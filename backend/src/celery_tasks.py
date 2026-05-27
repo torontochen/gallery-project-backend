@@ -8,9 +8,11 @@ c_app.config_from_object("src.config")
 
 
 @c_app.task()
-def send_email(recipients: list[str], subject: str, body: str, template_name: str = None):
+def send_email(
+    recipients: list[str], subject: str, body: str, template_name: str = None
+):
 
     message = create_message(recipients=recipients, subject=subject, body=body)
 
     async_to_sync(mail.send_message)(message, template_name=template_name)
-    print("Email sent")
+    # print("Email sent")
